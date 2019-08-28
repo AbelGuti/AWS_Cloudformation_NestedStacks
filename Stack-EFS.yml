@@ -1,0 +1,77 @@
+Description:
+  Stack responsible for the creation of EFS
+
+Mappings: 
+  RegionMap: 
+    us-west-2: 
+       HVM64: ami-082b5a644766e0e6f
+
+Parameters: 
+  VpcID:
+    Type: String
+    Description: Enter a valid VPC Id
+  Subnet1:
+    Type: String
+    Description: Enter a valid Subnet Id
+  Subnet2:
+    Type: String
+    Description: Enter a valid Subnet Id
+
+Resources:
+  SecurityGroupVPC:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SecurityGroupVPC
+      GroupDescription: Allow http, nfs, to client host
+      VpcId:
+        Ref: VpcID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 2049
+        ToPort: 2049
+        CidrIp: 0.0.0.0/0
+
+  EFSaylin:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: false
+  
+  MountTargetAylin1: 
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: 
+        Ref: EFSaylin
+      SubnetId: 
+        Ref: Subnet1
+      SecurityGroups: 
+        - Ref: SecurityGroupVPC
+
+  MountTargetAylin2: 
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: 
+        Ref: EFSaylin
+      SubnetId: 
+        Ref: Subnet2
+      SecurityGroups: 
+        - Ref: SecurityGroupVPC
+
+Outputs:
+  SecurityGroupVPC:
+    Description: The ID of the SecurityGroup
+    Value: !Ref SecurityGroupVPC
+    Export:
+      Name: "SecurityGroupVPC"
+  EFSaylin:
+    Description: The ID of the EFS
+    Value: !Ref EFSaylin
+    Export:
+      Name: "EFSaylin"

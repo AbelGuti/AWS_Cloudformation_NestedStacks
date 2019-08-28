@@ -1,0 +1,134 @@
+Description:
+  Stack responsible for the creation of EC2
+
+Mappings: 
+  RegionMap: 
+    us-west-2: 
+       HVM64: ami-082b5a644766e0e6f
+
+Parameters: 
+  SecurityGroupVPC:
+    Type: String
+    Description: Enter a valid SecurityGroup Id
+  EFSaylin:
+    Type: String
+    Description: Enter a valid EFS Id
+  Subnet1:
+    Type: String
+    Description: Enter a valid Subnet Id
+  Subnet2:
+    Type: String
+    Description: Enter a valid Subnet Id
+
+Resources:
+  DownloadRoleAylin: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "DownloadRoleAylin"
+      AssumeRolePolicyDocument: 
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "DownloadPolicyAylin"
+          PolicyDocument: 
+            Statement: 
+              - Effect: "Allow"
+                Sid: "VisualEditor0"
+                Action:
+                - "s3:ListBucket"
+                Resource: "arn:aws:s3:::*"
+              - Effect: "Allow"
+                Sid: "VisualEditor1"
+                Action: 
+                - "s3:GetObjectAcl"
+                - "s3:GetObject"
+                Resource: "arn:aws:s3:::aylinbucket123/*"
+              - Effect: "Allow"
+                Sid: "VisualEditor2"
+                Action:
+                - "s3:ListAllMyBuckets"
+                Resource: "*"
+
+  InstanceProfileAylin:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Roles:
+        - Ref: DownloadRoleAylin
+      InstanceProfileName: InstanceProfileAylin
+
+  LCaylin2: 
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties: 
+      LaunchConfigurationName: "LCaylin2"
+      KeyName: "MyUSE2KP"
+      ImageId: "ami-082b5a644766e0e6f"
+      InstanceType: "t2.micro"
+      SecurityGroups: 
+        - Ref: SecurityGroupVPC
+      IamInstanceProfile: 
+        Ref: InstanceProfileAylin
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y amazon-efs-utils
+          yum install -y nfs-utils
+          yum install httpd -y
+          service httpd start
+          chkconfig httpd on
+          service httpd restart
+          mkdir -p /mnt/efs
+          sudo mount -t efs -o tls ${EFSaylin}:/ /mnt/efs
+          aws s3 sync s3://aylinbucket123/WebServer1 /var/www/html
+      BlockDeviceMappings: 
+        - DeviceName: "/dev/xvda"
+          Ebs: 
+            VolumeSize: "8"
+            VolumeType: "gp2"
+            Iops: 100
+      InstanceMonitoring: 'false'
+
+  LBaylin:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      LoadBalancerName: "LBaylin"
+      SecurityGroups:
+        - Ref: SecurityGroupVPC
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: TCP
+      Subnets:
+        - Ref: Subnet1
+          Ref: Subnet2
+      Tags:
+        - Key: Name
+          Value: LBaylin
+    
+  ASGaylin: 
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      AutoScalingGroupName: "ASGaylin"
+      LaunchConfigurationName: 
+        Ref: "LCaylin2"
+      DesiredCapacity: "2"
+      MinSize: "2"
+      MaxSize: "2"
+      VPCZoneIdentifier:
+        - Ref: Subnet1
+          Ref: Subnet2
+      #HealthCheckGracePeriod: '300'
+      LoadBalancerNames: 
+        - Ref: LBaylin
+      Tags:
+        - Key: Name
+          Value: ASGaylin
+          PropagateAtLaunch: 'true'
+
+
+

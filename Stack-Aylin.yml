@@ -1,0 +1,39 @@
+Description:
+  Main Stack
+
+Mappings: 
+  RegionMap: 
+    us-west-2: 
+       HVM64: ami-082b5a644766e0e6f
+
+Resources: 
+  StackVPC: 
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: "https://aylinbucket123.s3.amazonaws.com/Stack-VPC.yml"
+
+  StackEFS: 
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: "https://aylinbucket123.s3.amazonaws.com/Stack-EFS.yml"
+      Parameters: 
+        VpcID: 
+          !GetAtt StackVPC.Outputs.VpcID
+        Subnet1: 
+          !GetAtt StackVPC.Outputs.Subnet1
+        Subnet2: 
+          !GetAtt StackVPC.Outputs.Subnet2
+
+  StackEC2: 
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: "https://aylinbucket123.s3.amazonaws.com/Stack-EC2.yml"
+      Parameters: 
+        SecurityGroupVPC: 
+          !GetAtt StackEFS.Outputs.SecurityGroupVPC
+        EFSaylin: 
+          !GetAtt StackEFS.Outputs.EFSaylin
+        Subnet1: 
+          !GetAtt StackVPC.Outputs.Subnet1
+        Subnet2: 
+          !GetAtt StackVPC.Outputs.Subnet2

@@ -1,0 +1,112 @@
+
+Description:
+  Stack responsible for the creation of VPC
+
+Mappings: 
+  RegionMap: 
+    us-west-2: 
+       HVM64: ami-082b5a644766e0e6f
+
+Resources:
+  VPCaylin:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 192.169.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: VPCaylin
+
+  Subnet1Aylin:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: VPCaylin
+        CidrBlock: 192.169.1.0/24
+        AvailabilityZone: "us-west-2a"
+        Tags:
+        - Key: Name
+          Value: Subnet1Aylin
+        MapPublicIpOnLaunch: 'true'
+
+  Subnet2Aylin:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: VPCaylin
+        CidrBlock: 192.169.2.0/24
+        AvailabilityZone: "us-west-2b"
+        Tags:
+        - Key: Name
+          Value: Subnet2Aylin
+        MapPublicIpOnLaunch: 'true'
+
+  IGaylin:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: IGaylin
+
+  PublicRouteTableAylin:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPCaylin
+      Tags:
+      - Key: Name
+        Value: PublicRouteTableAylin
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: 
+        Ref: VPCaylin
+      InternetGatewayId: 
+        Ref: IGaylin
+
+  RouteAylin:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTableAylin
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: IGaylin
+
+  RouteTableAssociationSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: Subnet1Aylin
+      RouteTableId:
+        Ref: PublicRouteTableAylin
+
+  RouteTableAssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: Subnet2Aylin
+      RouteTableId:
+        Ref: PublicRouteTableAylin
+
+Outputs:
+  VpcID:
+    Description: The ID of the VPC
+    Value: !Ref VPCaylin
+    Export:
+      Name: "VpcID"
+
+  Subnet1:
+    Description: The ID of the Subnet 1
+    Value: !Ref Subnet1Aylin
+    Export:
+      Name: "Subnet1"
+  
+  Subnet2:
+    Description: The ID of the Subnet 2
+    Value: !Ref Subnet2Aylin
+    Export:
+      Name: "Subnet2"
